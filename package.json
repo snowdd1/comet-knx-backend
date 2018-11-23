@@ -1,8 +1,8 @@
 {
   "name": "comet-knx-backend",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Backend for the CometVisu to connect to KNX efficiently.",
-  "main": "app.js",
+  "main": "knxcometbackend.js",
   "author": {
     "name": "snowdd1"
   },

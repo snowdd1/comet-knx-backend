@@ -6,16 +6,18 @@
 /* *********
  * Plan: 
  * 
- * connect to eibd
- * get all raw telegrams
- * store all values in a key-value store (aka object, dictionary etc.)
- * provide a read hook (http/https) using SSE (simple sample https://www.w3schools.com/html/html5_serversentevents.asp )
- * provide a write hook (dito) - 
- * provide a login hook (dito) https://github.com/CometVisu/CometVisu/wiki/Protokoll#login resp https://knx-user-forum.de/forum/supportforen/cometvisu/1288069-noch-eine-knxd-auf-zweitem-server?p=1288496#post1288496
- * 
+ * (done) connect to eibd
+ * (done) get all raw telegrams
+ * (done) store all values in a key-value store (aka object, dictionary etc.)
+ * (done) provide a read hook (http/https) using SSE (simple sample https://www.w3schools.com/html/html5_serversentevents.asp )
+ * (done) provide a write hook (dito) - 
+ * (done) provide a login hook (dito) https://github.com/CometVisu/CometVisu/wiki/Protokoll#login resp https://knx-user-forum.de/forum/supportforen/cometvisu/1288069-noch-eine-knxd-auf-zweitem-server?p=1288496#post1288496
+ * Pending:
+ * - find out why the node-eibd requires to close theh connection after each telegram for reliable sending of telegrams.
+ * - issue read requests for values not in the cache (might be dangerous?)
  *
  */
-// knx monitor
+
 /**
  * Configuration Object
  * */
@@ -34,7 +36,9 @@ let config = {
  * */
 const loglevels = { Info: 4, Debug: 3, Warning: 2, Error: 1 }
 
-
+/**
+ * @classdesc Microscopic Debugging helper-Logger
+ * */
 class MiniLog {
     /**
      *    
@@ -100,6 +104,7 @@ function buffer2bin(buf) {
 
 /**
  * @classdesc A BusListener object is connected to a GropupSocketListener object and reacts on telegrams that are passed. It builds a local cache with the latest telegrams
+ * @emits 'telegram' - on data
  * */
 class BusListener extends EventEmitter {
     /**
@@ -148,13 +153,10 @@ class BusListener extends EventEmitter {
         }
     } // onTelegram
 }
-
-
-
-//var buslistener;
-
-
-
+/**
+ * @classdesc A low level listener on the bus that can handle the connection (and issues therewith) and emit events
+ * @emits 'newParserConnection' - on reconnect
+ * */
 class GroupSocketListener extends EventEmitter {
     constructor(opts) {
         super();
@@ -162,7 +164,7 @@ class GroupSocketListener extends EventEmitter {
         this._connect();
     }
     _connect() {
-        this.knxdconnection = knxd.Connection();
+        this.knxdconnection = new knxd.Connection();
         this.connected = false;
         // try to connect
         this.knxdconnection.socketRemote(this.opts, this._callback1_connect.bind(this));
@@ -198,9 +200,18 @@ class GroupSocketListener extends EventEmitter {
 }
 
 
-
+/**
+ * @classdesc GroupReader listens to a set of GroupAddresses and emits events if they are changed on the bus
+ * @emits 'newData', {string} groupaddress, {string} value - on values (write/response) for the GroupAddresses used in the constructor
+ * 
+ * */
 class GroupReader extends EventEmitter {
     // emits: 'newData', <group address>, <value hex>
+    /**
+     *      
+     * @param {BusListener} buslistener - Instance to connect to
+     * @param {Array<string>} gaArray - Addresses to listen to
+     */
     constructor(buslistener, gaArray) {
         super();
         this.filter = [];
@@ -208,25 +219,32 @@ class GroupReader extends EventEmitter {
         buslistener.on('busevent', this.newEvent.bind(this));
         minilog.debug(this.addresses);
     }
+    /**
+     * 
+     * @param {string} ga - GroupAddress
+     * @param {string} value - hex-encoded value
+     */
     newEvent(ga, value) {
-        minilog.debug('GroupReader.newEvent(): ' + ga)
-        // BROKEN this bound to EMITTER not receiver ////////////////////////////////////
+        minilog.debug('GroupReader.newEvent(): ' + ga);
         if (this.addresses.includes(ga)) {
             minilog.debug('GroupReader.newEvent() "if" hit');
-            this.emit('newData', ga, value)
+            this.emit('newData', ga, value);
         }
     }
 }
+/**
+ * @classdesc Server Sent Event Stream (SSEStream) sends continues stream of new data to the Resonse object it is initialized with.
+ * */
 class SSEStream {
     /**
      * 
      * @param {BusListener} buslistener
      * @param {Response} response
-     * @param {Array} gaArray
+     * @param {Array<string>} gaArray
      */
     constructor(buslistener, response, gaArray) {
-        minilog.debug('SSEStrem constructor:');
-        console.dir(gaArray);
+        minilog.debug('SSEStrem constructor.');
+        //console.dir(gaArray);
         // create a new listner to the events
         this.groupReader = new GroupReader(buslistener, gaArray);
         this.groupReader.on('newData', this.update.bind(this));
@@ -245,19 +263,27 @@ class SSEStream {
         }
 
     }
+    /**
+     * 
+     * @param {string} ga - Group Address
+     * @param {string} value - hex encoded value
+     */
     update(ga, value) {
         minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
         this.response.write('{"d":{"' + ga + '":"' + value + '"}}\n\n');
     }
 }
-
+/**
+ * @classdesc A class for sending data to the bus. 
+ * TODO: currently it requires closing and re-opening of the connection after each sent telegram. Investigation pending.
+ * */
 class GroupSocketWriter {
     constructor(opts) {
         this.opts = opts;
         this._connect();
     }
     _connect() {
-        this.knxdconnection = knxd.Connection();
+        this.knxdconnection = new knxd.Connection();
         this.connected = false;
         // try to connect
         this.knxdconnection.socketRemote(this.opts, this._callback1_connect.bind(this));
@@ -299,8 +325,9 @@ class GroupSocketWriter {
                                 minilog.error("[ERROR] knxwrite:sendAPDU: " + err);
                             } else {
                                 minilog.debug("GroupSocketWriter: knx data sent: Value " + rawValueHexString + " for GA " + groupAddress);
+                                this.knxdconnection.end(); //TODO: this reqires a new connection every time!
                             }
-                        }.bind(this), true); // should not close the connection
+                        }.bind(this), true); // should not close the connection automatically
                     }
                 }.bind(this)
                 )
@@ -340,22 +367,6 @@ class GroupSocketWriter {
         return Array.prototype.slice.call(Buffer.concat([Buffer.alloc(1), buf]), 0);
     }
 }
-
-// writer
-// VISU sends 
-// 80 for an OFF value, 81 for ON, ==> short DPT1
-// 80ff for a 255 one byte DPT5
-// 800fc4 for a DPT9 float
-// 
-
-
-
-
-
-//web server
-
-
-
 /**
  * 
  * @param {BusListener} busListener - Class instance for hearing group chat on the bus
@@ -482,25 +493,21 @@ function createRequestServer(busListener, groupSocketWriter) {
 }
 
 
-
-//groupsocketlisten(config.knxd);
-
-// MAIN
+// MAIN **********************************************************************************************
 // connect to the KNX bus for LISTENING
 const groupSocketListener = new GroupSocketListener(config.knxd);
 const busListener = new BusListener(groupSocketListener);
-
 
 // connect to the KNX bus for WRITING
 const groupSocketWriter = new GroupSocketWriter(config.knxd);
 
 
-const webserver = createRequestServer(busListener, groupSocketWriter);
-
-
+// start webserver and attach it to the port given in config
 if (!config.http.cacheport || config.http.cacheport <= 1024 || config.http.cacheport >= 65000) {
     minilog.debug('[OK] Webserver not started, no config.http.cacheport configured or cacheport<=1024 or cacheport>=65000');
 } else {
+    // start the webserver
+    const webserver = createRequestServer(busListener, groupSocketWriter);
     webserver.listen(config.http.cacheport);
 }
 
