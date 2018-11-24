@@ -66,7 +66,7 @@ class MiniLog {
     }
 }
 
-const minilog = new MiniLog(loglevels.Info);
+const minilog = new MiniLog(loglevels.Debug);
 
 
 
@@ -254,8 +254,9 @@ class SSEStream {
      * @param {Response} response
      * @param {Request} request
      * @param {Array<string>} gaArray
+     * @param {GroupSocketWriter} groupSocketWriter
      */
-    constructor(buslistener, response, request, gaArray) {
+    constructor(buslistener, response, request, gaArray, groupSocketWriter) {
         minilog.debug('SSEStrem constructor for '+gaArray);
         //console.dir(gaArray);
         // create a new listner to the events
@@ -270,6 +271,7 @@ class SSEStream {
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
         //get all the cached data and send it
         let answer = "";
+        let addressesToRead = [];
         for (let i = 0; i < gaArray.length; i++) {
             let ga = gaArray[i];
             if (buslistener._valueCache.hasOwnProperty(ga)) {
@@ -277,13 +279,18 @@ class SSEStream {
                     answer = answer + ',';
                 }
                 answer = answer + '"' + ga + '":"' + buslistener._valueCache[ga].value + '"'; // part of the json
+            } else {
+                addressesToRead.push(ga);
             }
         }
         if (answer) {
-            
             this.response.write('event: message\ndata:{"d":{' + answer + '}, "i":0}\nid:' + this.index +'\n\n');
         } else {
             this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
+        }
+        // try to read the addresses that were not in the cache
+        for (let i = 0; i < addressesToRead.length; i++) {
+            groupSocketWriter.readAddress(addressesToRead[i]);
         }
     }
     /**
@@ -369,6 +376,38 @@ class GroupSocketWriter {
             }
         }
     }
+    readAddress(ga) {
+        var dest = knxd.str2addr(groupAddress);
+        if (dest === 'Error: Could not parse address') {
+            minilog.error('Invalid Address ' + groupAddress);
+        } else {
+            minilog.debug("DEBUG knxwrite Address conversion, converted " + groupAddress + " to " + dest);
+            if (this.connected) {
+                this.knxdconnection.openTGroup(dest, 1, function (err) {
+                    if (err) {
+                        minilog.error("[ERROR] knxwrite:openTGroup: " + err);
+
+                    } else {
+                        minilog.debug("DEBUG opened TGroup ");
+                        var msg = knxd.createMessage('read', '', 0);
+                        this.knxdconnection.sendAPDU(msg, function (err) {
+                            if (err) {
+                                minilog.error("[ERROR] knxwrite:sendAPDU: " + err);
+                            } else {
+                                minilog.debug("GroupSocketWriter.readAddress: read request sent for GA " + groupAddress);
+                                this.knxdconnection.end(); //TODO: this reqires a new connection every time!
+                            }
+                        }.bind(this), true); // should not close the connection automatically
+                    }
+                }.bind(this)
+                )
+            } else {
+                minilog.error('[ERR] no active knxd connection for writing.');
+            }
+        }
+    }
+
+    }
     /**
      * tries to reopen the connection of the connection breaks
      * */
@@ -418,15 +457,15 @@ function createRequestServer(busListener, groupSocketWriter) {
                 /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
                 let key = decodeURIComponent(b[0]);
-                minilog.info(key);
-                minilog.info(params[key]);
+                minilog.debug(key);
+                minilog.debug(params[key]);
                 let value = decodeURIComponent(b[1] || '') ;
-                minilog.info(value);
+                minilog.debug(value);
                 if (params[key]) {
                     // key already exists
                     if (params[key] instanceof Array) {
                         // it is an array
-                        params[key].concat(value);
+                        params[key] = params[key].concat(value);
                     } else {
                         // make an array
                         params[key] = [params[key], value];
@@ -478,7 +517,7 @@ function createRequestServer(busListener, groupSocketWriter) {
                     listenTo.push(addr);
                 }
                 // need to async detach now!!!!
-                new SSEStream(busListener, response, request, listenTo);
+                new SSEStream(busListener, response, request, listenTo, groupSocketWriter);
             }
         } else if (reqparsed[0] === 'write') {
             // write to (multiple) addresses
