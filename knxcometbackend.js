@@ -142,11 +142,11 @@ class BusListener extends EventEmitter {
      * @param {Buffer} valbuffer - Buffer for the value in binary, non-interpreted format
      */
     _onTelegram(event, src, destGA, valbuffer) {
-        minilog.debug('[ok] event ' + event + '; from: ' + src + '; Dest: ' + destGA + ' Value: ' + valbuffer.toString('hex'));
+        //minilog.debug('[ok] event ' + event + '; from: ' + src + '; Dest: ' + destGA + ' Value: ' + valbuffer.toString('hex'));
         //call all the users 
         if (['write', 'response'].indexOf(event)>=0) {
             this._valueCache[destGA] = { timestamp: Math.floor(new Date() / 1000), value: valbuffer.toString('hex') };
-            minilog.debug('busevent fires for ' + destGA);
+            //minilog.debug('busevent fires for ' + destGA);
             this.emit('busevent', destGA, valbuffer.toString('hex'))
         } else {
             minilog.debug('[ok] ignored: ' + event + ' for Dest: ' + knxd.addr2str(destGA, true));
@@ -225,7 +225,7 @@ class GroupReader extends EventEmitter {
      * @param {string} value - hex-encoded value
      */
     newEvent(ga, value) {
-        minilog.debug('GroupReader.newEvent(): ' + ga);
+        minilog.debug('GroupReader.newEvent(): ' + ga + ' listening for '+this.addresses);
         if (this.addresses.includes(ga)) {
             minilog.debug('GroupReader.newEvent() "if" hit');
             this.emit('newData', ga, value);
@@ -243,11 +243,12 @@ class SSEStream {
      * @param {Array<string>} gaArray
      */
     constructor(buslistener, response, gaArray) {
-        minilog.debug('SSEStrem constructor.');
+        minilog.debug('SSEStrem constructor for '+gaArray);
         //console.dir(gaArray);
         // create a new listner to the events
         this.groupReader = new GroupReader(buslistener, gaArray);
         this.groupReader.on('newData', this.update.bind(this));
+        this.index = 0;
         this.response = response;
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
         //get all the cached data and send it
@@ -259,7 +260,9 @@ class SSEStream {
             }
         }
         if (answer) {
-            this.response.write('{"d":{' + answer + '}}\n\n');
+            this.response.write('{"d":{' + answer + '}, "i":0}\n\n');
+        } else {
+            this.response.write('{"d":{ }, "i":0}\n\n');
         }
 
     }
@@ -269,8 +272,9 @@ class SSEStream {
      * @param {string} value - hex encoded value
      */
     update(ga, value) {
+        this.index += 1;
         minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
-        this.response.write('{"d":{"' + ga + '":"' + value + '"}}\n\n');
+        this.response.write('{"d":{"' + ga + '":"' + value + '"}, "i":'+this.index+'}\n\n');
     }
 }
 /**
