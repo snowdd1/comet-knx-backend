@@ -407,7 +407,7 @@ class GroupSocketWriter {
         }
     }
 
-    }
+    
     /**
      * tries to reopen the connection of the connection breaks
      * */
