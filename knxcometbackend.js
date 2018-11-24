@@ -376,7 +376,11 @@ class GroupSocketWriter {
             }
         }
     }
-    readAddress(ga) {
+    /**
+     * Issues read request on the bus
+     * @param {string} groupAddress
+     */
+    readAddress(groupAddress) {
         var dest = knxd.str2addr(groupAddress);
         if (dest === 'Error: Could not parse address') {
             minilog.error('Invalid Address ' + groupAddress);
