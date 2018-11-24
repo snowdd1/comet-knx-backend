@@ -418,9 +418,9 @@ function createRequestServer(busListener, groupSocketWriter) {
                 /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
                 let key = decodeURIComponent(b[0]);
-                minilog.debug(key);
+                minilog.info(key);
                 let value = decodeURIComponent(b[1] || '') ;
-                minilog.debug(value);
+                minilog.info(value);
                 if (params[key]) {
                     // key already exists
                     if (params[key] instanceof Array) {
