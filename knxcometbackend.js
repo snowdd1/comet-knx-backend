@@ -415,7 +415,7 @@ function createRequestServer(busListener, groupSocketWriter) {
                 /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
                 if (params[decodeURIComponent(b[0])]) {
-                    if (typeof params[decodeURIComponent(b[0])] === Array) {
+                    if (params[decodeURIComponent(b[0])] instanceof Array) {
                         params[decodeURIComponent(b[0])].concat(decodeURIComponent(b[1]));
                     } else {
                         params[decodeURIComponent(b[0])] = [params[decodeURIComponent(b[0])], decodeURIComponent(b[1])];
