@@ -262,8 +262,7 @@ class SSEStream {
                 if (answer) {
                     answer = answer + ',';
                 }
-                console.dir(buslistener._valueCache[ga]);
-                answer = answer + '"' + ga + '":"' + buslistener._valueCache[ga] + '"'; // part of the json
+                answer = answer + '"' + ga + '":"' + buslistener._valueCache[ga].value + '"'; // part of the json
             }
         }
         if (answer) {
@@ -477,14 +476,14 @@ function createRequestServer(busListener, groupSocketWriter) {
 
             // print sorted table
             let keys = [];
-            for (let k in buslistener._valueCache) {
-                if (buslistener._valueCache.hasOwnProperty(k)) {
+            for (let k in busListener._valueCache) {
+                if (busListener._valueCache.hasOwnProperty(k)) {
                     keys.push(k);
                 }
             }
             keys.sort(); //kind of sort: without specific function 1/10/2 < 1/9/2 !!
             for (let i = 0; i < keys.length; i++) {
-                response.write('<tr><td>' + keys[i] + '</td><td>' + buslistener._valueCache[keys[i]].timestamp + '</td><td>' + buslistener._valueCache[keys[i]].value + '</td>');
+                response.write('<tr><td>' + keys[i] + '</td><td>' + busListener._valueCache[keys[i]].timestamp + '</td><td>' + busListener._valueCache[keys[i]].value + '</td>');
             }
             //for (let addr in buslistener._valueCache) {
             //    response.write('<tr><td>' + addr + '</td><td>' + buslistener._valueCache[addr] + '</td>');
