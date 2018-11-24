@@ -36,7 +36,7 @@ var indGroupReader = 0;
 /**
  * @type {{Info: Integer, Debug: Integer, Warning: Integer, Error: Integer}}
  * */
-const loglevels = { Info: 4, Debug: 3, Warning: 2, Error: 1 }
+const loglevels = { Info: 3, Debug: 4, Warning: 2, Error: 1 }
 
 /**
  * @classdesc Microscopic Debugging helper-Logger
@@ -53,10 +53,10 @@ class MiniLog {
         if (this.loglevel >= 3) console.log(arguments);
     }
     info(anything) {
-        if (this.loglevel >= 4) console.log(arguments);
+        if (this.loglevel >= 3) console.log(arguments);
     }
     debug(anything) {
-        if (this.loglevel >= 3) console.log(arguments);
+        if (this.loglevel >= 4) console.log(arguments);
     }
     warn(anything) {
         if (this.loglevel >= 2) console.log(arguments);
@@ -418,7 +418,9 @@ function createRequestServer(busListener, groupSocketWriter) {
                 /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
                 let key = decodeURIComponent(b[0]);
+                minilog.debug(key);
                 let value = decodeURIComponent(b[1] || '') ;
+                minilog.debug(value);
                 if (params[key]) {
                     // key already exists
                     if (params[key] instanceof Array) {
