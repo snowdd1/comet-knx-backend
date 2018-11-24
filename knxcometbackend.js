@@ -405,7 +405,7 @@ class GroupSocketWriter {
 function createRequestServer(busListener, groupSocketWriter) {
     const altKNXAddrPars = /"KNX:(.*?)"/;
     let requestserver = http.createServer(function (request, response) {
-        //minilog.debug('http.createServer CALLBACK FUNCTION URL=' + request.url);
+        minilog.debug('http.createServer CALLBACK FUNCTION URL=' + request.url);
         var reqparsed = request.url.substr(1).split('?');
         var params = {};
         var paramstemp = [];
@@ -414,14 +414,20 @@ function createRequestServer(busListener, groupSocketWriter) {
             for (var i = 0; i < paramstemp.length; i++) {
                 /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
-                if (params[decodeURIComponent(b[0])]) {
-                    if (params[decodeURIComponent(b[0])] instanceof Array) {
-                        params[decodeURIComponent(b[0])].concat(decodeURIComponent(b[1]));
+                let key = decodeURIComponent(b[0]);
+                let value = decodeURIComponent(b[1] || '') ;
+                if (params[key]) {
+                    // key already exists
+                    if (params[key] instanceof Array) {
+                        // it is an array
+                        params[key].concat(value);
                     } else {
-                        params[decodeURIComponent(b[0])] = [params[decodeURIComponent(b[0])], decodeURIComponent(b[1])];
+                        // make an array
+                        params[key] = [params[key], value];
                     }
                 } else {
-                    params[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
+                    // first of key
+                    params[key] = value;
                 }
             }
         }
