@@ -229,7 +229,7 @@ class GroupReader extends EventEmitter {
      * @param {string} value - hex-encoded value
      */
     newEvent(ga, value) {
-        minilog.debug(this.indexOfReader + ': GroupReader.newEvent(): ' + ga + ' listening for ' + this.addresses);
+        minilog.debug(this.indexOfReader + ': GroupReader.newEvent(): ' + ga + ' listening for ' + this.addresses + ' (count: ' + this.addresses.length +')');
         if (this.addresses.includes(ga)) {
             minilog.debug('GroupReader.newEvent() "if" hit');
             this.emit('newData', ga, value);
@@ -237,8 +237,10 @@ class GroupReader extends EventEmitter {
     }
     closeGR() {
         // unsubscribe
+        minilog.debug('GroupReader.closeGR() for ' + this.addresses);
         this.buslistener.removeListener('busevent', this.newEvent.bind(this));
-        
+        this.addresses = ['999999999999999999999']; // does not fit on anything anymore
+        this.indexOfReader = 'Dead animal! ';
     }
 }
 /**
@@ -294,7 +296,7 @@ class SSEStream {
     closeSSE() {
         // close the stream!
         this.response.end();
-        console.log('Stopped sending events.');
+        minilog.debug('Stopped sending events.');
         this.groupReader.removeListener('newData', this.update.bind(this));
         this.groupReader.closeGR();
         this.groupReader = undefined;
