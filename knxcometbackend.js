@@ -219,7 +219,8 @@ class GroupReader extends EventEmitter {
         this.filter = [];
         this.addresses = gaArray;
         this.buslistener = buslistener;
-        buslistener.on('busevent', this.newEvent.bind(this));
+        this.boundNewEvent = this.newEvent.bind(this)
+        buslistener.on('busevent', this.boundNewEvent);
         minilog.debug(this.addresses);
         this.indexOfReader = indGroupReader++;
     }
@@ -238,7 +239,7 @@ class GroupReader extends EventEmitter {
     closeGR() {
         // unsubscribe
         minilog.debug('GroupReader.closeGR() for ' + this.addresses);
-        this.buslistener.removeListener('busevent', this.newEvent.bind(this));
+        this.buslistener.removeListener('busevent', this.boundNewEvent);
         this.addresses = ['999999999999999999999']; // does not fit on anything anymore
         this.indexOfReader = 'Dead animal! ';
     }
@@ -259,11 +260,13 @@ class SSEStream {
         //console.dir(gaArray);
         // create a new listner to the events
         this.groupReader = new GroupReader(buslistener, gaArray);
-        this.groupReader.on('newData', this.update.bind(this));
+        this.boundUpdate = this.update.bind(this)
+        this.groupReader.on('newData', this.boundUpdate);
         this.index = 0;
         this.response = response;
         this.request = request;
-        this.request.on('close', this.closeSSE.bind(this));
+        this.boundCloseSSE = this.closeSSE.bind(this)
+        this.request.on('close', this.boundCloseSSE );
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
         //get all the cached data and send it
         let answer = "";
@@ -296,11 +299,11 @@ class SSEStream {
     closeSSE() {
         // close the stream!
         this.response.end();
-        minilog.debug('Stopped sending events.');
-        this.groupReader.removeListener('newData', this.update.bind(this));
+        minilog.debug('SSEStrem.closeSSE(): got request.close event');
+        this.groupReader.removeListener('newData', this.boundUpdate);
         this.groupReader.closeGR();
         this.groupReader = undefined;
-        this.request.removeListener('close', this.closeSSE.bind(this));
+        this.request.removeListener('close', this.boundCloseSSE);
     }
 }
 /**
