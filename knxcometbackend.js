@@ -218,6 +218,7 @@ class GroupReader extends EventEmitter {
         super();
         this.filter = [];
         this.addresses = gaArray;
+        this.buslistener = buslistener;
         buslistener.on('busevent', this.newEvent.bind(this));
         minilog.debug(this.addresses);
         this.indexOfReader = indGroupReader++;
@@ -234,6 +235,11 @@ class GroupReader extends EventEmitter {
             this.emit('newData', ga, value);
         }
     }
+    closeGR() {
+        // unsubscribe
+        this.buslistener.removeListener('busevent', this.newEvent.bind(this));
+        
+    }
 }
 /**
  * @classdesc Server Sent Event Stream (SSEStream) sends continues stream of new data to the Resonse object it is initialized with.
@@ -243,9 +249,10 @@ class SSEStream {
      * 
      * @param {BusListener} buslistener
      * @param {Response} response
+     * @param {Request} request
      * @param {Array<string>} gaArray
      */
-    constructor(buslistener, response, gaArray) {
+    constructor(buslistener, response, request, gaArray) {
         minilog.debug('SSEStrem constructor for '+gaArray);
         //console.dir(gaArray);
         // create a new listner to the events
@@ -253,6 +260,8 @@ class SSEStream {
         this.groupReader.on('newData', this.update.bind(this));
         this.index = 0;
         this.response = response;
+        this.request = request;
+        this.request.on('close', this.closeSSE.bind(this));
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
         //get all the cached data and send it
         let answer = "";
@@ -271,7 +280,6 @@ class SSEStream {
         } else {
             this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
         }
-
     }
     /**
      * 
@@ -282,6 +290,15 @@ class SSEStream {
         this.index += 1;
         minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
         this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index +'\n\n'); // try message as event type, and preceed data object with data:
+    }
+    closeSSE() {
+        // close the stream!
+        this.response.end();
+        console.log('Stopped sending events.');
+        this.groupReader.removeListener('newData', this.update.bind(this));
+        this.groupReader.closeGR();
+        this.groupReader = undefined;
+        this.request.removeListener('close', this.closeSSE.bind(this));
     }
 }
 /**
@@ -386,25 +403,22 @@ class GroupSocketWriter {
 function createRequestServer(busListener, groupSocketWriter) {
     const altKNXAddrPars = /"KNX:(.*?)"/;
     let requestserver = http.createServer(function (request, response) {
-        minilog.debug('http.createServer CALLBACK FUNCTION URL=' + request.url);
+        //minilog.debug('http.createServer CALLBACK FUNCTION URL=' + request.url);
         var reqparsed = request.url.substr(1).split('?');
         var params = {};
         var paramstemp = [];
         if (reqparsed[1]) {
             paramstemp = reqparsed[1].split('&');
             for (var i = 0; i < paramstemp.length; i++) {
-                /** @type {string[]} */
+                /** @type {Array<string>} */
                 var b = paramstemp[i].split('=');
                 if (params[decodeURIComponent(b[0])]) {
                     if (typeof params[decodeURIComponent(b[0])] === Array) {
-                        minilog.debug("it''s an array, add " + decodeURIComponent(b[1]));
                         params[decodeURIComponent(b[0])].concat(decodeURIComponent(b[1]));
                     } else {
-                        minilog.debug("it's not an array, make one with " + params[decodeURIComponent(b[0])] + ' and ' + decodeURIComponent(b[1]));
                         params[decodeURIComponent(b[0])] = [params[decodeURIComponent(b[0])], decodeURIComponent(b[1])];
                     }
                 } else {
-                    minilog.debug("it's first occurrence, " + decodeURIComponent(b[1] || ''));
                     params[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
                 }
             }
@@ -439,7 +453,7 @@ function createRequestServer(busListener, groupSocketWriter) {
 
             if (params['a']) {
                 // parse the KNX addresses
-                minilog.debug(params['a']);
+                //minilog.debug(params['a']);
                 let listenTo = [];
                 for (let i in params.a) {
                     //minilog.debug(addr);
@@ -450,7 +464,7 @@ function createRequestServer(busListener, groupSocketWriter) {
                     listenTo.push(addr);
                 }
                 // need to async detach now!!!!
-                new SSEStream(busListener, response, listenTo);
+                new SSEStream(busListener, response, request, listenTo);
             }
         } else if (reqparsed[0] === 'write') {
             // write to (multiple) addresses
