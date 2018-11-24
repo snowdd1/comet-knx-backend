@@ -31,6 +31,8 @@ let config = {
     }
 }
 
+var indGroupReader = 0;
+
 /**
  * @type {{Info: Integer, Debug: Integer, Warning: Integer, Error: Integer}}
  * */
@@ -218,6 +220,7 @@ class GroupReader extends EventEmitter {
         this.addresses = gaArray;
         buslistener.on('busevent', this.newEvent.bind(this));
         minilog.debug(this.addresses);
+        this.indexOfReader = indGroupReader++;
     }
     /**
      * 
@@ -225,7 +228,7 @@ class GroupReader extends EventEmitter {
      * @param {string} value - hex-encoded value
      */
     newEvent(ga, value) {
-        minilog.debug('GroupReader.newEvent(): ' + ga + ' listening for '+this.addresses);
+        minilog.debug(this.indexOfReader + ': GroupReader.newEvent(): ' + ga + ' listening for ' + this.addresses);
         if (this.addresses.includes(ga)) {
             minilog.debug('GroupReader.newEvent() "if" hit');
             this.emit('newData', ga, value);
@@ -260,9 +263,9 @@ class SSEStream {
             }
         }
         if (answer) {
-            this.response.write('{"d":{' + answer + '}, "i":0}\n\n');
+            this.response.write('event: message\ndata:{"d":{' + answer + '}, "i":0}\nid:' + this.index +'\n\n');
         } else {
-            this.response.write('{"d":{ }, "i":0}\n\n');
+            this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
         }
 
     }
@@ -274,7 +277,7 @@ class SSEStream {
     update(ga, value) {
         this.index += 1;
         minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
-        this.response.write('{"d":{"' + ga + '":"' + value + '"}, "i":'+this.index+'}\n\n');
+        this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index +'\n\n'); // try message as event type, and preceed data object with data:
     }
 }
 /**
