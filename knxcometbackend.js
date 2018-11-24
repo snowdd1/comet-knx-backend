@@ -259,10 +259,15 @@ class SSEStream {
         for (let i = 0; i < gaArray.length; i++) {
             let ga = gaArray[i];
             if (buslistener._valueCache.hasOwnProperty(ga)) {
-                answer = answer + (answer) ? ', "' : '"' + ga + '":"' + buslistener._valueCache[ga] + '"'; // part of the json
+                if (answer) {
+                    answer = answer + ',';
+                }
+                console.dir(buslistener._valueCache[ga]);
+                answer = answer + '"' + ga + '":"' + buslistener._valueCache[ga] + '"'; // part of the json
             }
         }
         if (answer) {
+            
             this.response.write('event: message\ndata:{"d":{' + answer + '}, "i":0}\nid:' + this.index +'\n\n');
         } else {
             this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
