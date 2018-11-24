@@ -419,6 +419,7 @@ function createRequestServer(busListener, groupSocketWriter) {
                 var b = paramstemp[i].split('=');
                 let key = decodeURIComponent(b[0]);
                 minilog.info(key);
+                minilog.info(params[key]);
                 let value = decodeURIComponent(b[1] || '') ;
                 minilog.info(value);
                 if (params[key]) {
