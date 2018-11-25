@@ -275,6 +275,7 @@ class SSEStream {
         this.request.on('close', this.boundCloseSSE); // clean up if the request line is closed
         this.response.on('close', this.boundCloseSSE); // clean up if the response line is closed
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
+        this.ID = new Date();
         //get all the cached data and send it
         let answer = "";
         let addressesToRead = [];
@@ -307,7 +308,7 @@ class SSEStream {
      */
     update(ga, value) {
         this.index += 1;
-        minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
+        minilog.info(this.ID.toISOString + ' SSEStream.update(' + ga + ',' + value + ')');
         this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
         this.updateKeepalive();
     }
@@ -322,7 +323,7 @@ class SSEStream {
      * */
     keepalive() {
         this.index += 1;
-        minilog.debug(this.request.getHeader('Last-Event-ID') + ' SSEStream.keepalive()');
+        minilog.info(this.ID.toISOString + ' SSEStream.keepalive()');
         this.response.write('event: keepalive\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
         this.updateKeepalive();
     }
@@ -332,7 +333,7 @@ class SSEStream {
     closeSSE() {
         // close the stream!
         this.response.end();
-        minilog.debug('SSEStrem.closeSSE(): got request.close event');
+        minilog.info(this.ID + ' SSEStrem.closeSSE(): got request.close event');
         this.groupReader.removeListener('newData', this.boundUpdate);
         this.groupReader.closeGR();
         this.groupReader = undefined;
