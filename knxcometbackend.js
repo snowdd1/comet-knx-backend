@@ -58,7 +58,7 @@ class MiniLog {
     }
 }
 
-const minilog = new MiniLog(loglevels.Debug);
+
 
 
 const knxd = require('eibd');
@@ -102,6 +102,8 @@ try {
     console.log("");
     throw e;
 }
+
+const minilog = new MiniLog(config.loglevel || loglevels.Warning);
 
 /**
  * @classdesc A BusListener object is connected to a GropupSocketListener object and reacts on telegrams that are passed. It builds a local cache with the latest telegrams
@@ -320,7 +322,7 @@ class SSEStream {
      * */
     keepalive() {
         this.index += 1;
-        minilog.debug('SSEStream.keepalive()');
+        minilog.debug(this.request.getHeader('Last-Event-ID') + ' SSEStream.keepalive()');
         this.response.write('event: keepalive\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
         this.updateKeepalive();
     }
@@ -335,6 +337,7 @@ class SSEStream {
         this.groupReader.closeGR();
         this.groupReader = undefined;
         this.request.removeListener('close', this.boundCloseSSE);
+        this.response.removeListener('close', this.boundCloseSSE);
     }
 }
 /**

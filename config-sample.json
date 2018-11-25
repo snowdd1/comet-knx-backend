@@ -6,5 +6,6 @@
   "http": {
     "port": 32150,
     "keepaliveSecs": 60
-  }
+  },
+  "loglevel":  2
 }

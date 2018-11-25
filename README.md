@@ -14,6 +14,7 @@ ES6 e.g. node 10 LTS [nodejs.org](https://nodejs.org)
     * the *IP address or name* of the knxd server: Locate `knxd` object, `host: 'my-knxd-server.local'` change to your setup
     * the default port of 32150: See `http` object, locate `port:32150`
     * if required adjust the `keepaliveSecs` setting - if there was no telegram to be sent upstream to the CV this triggers an empty message to force the reverse proxy to keep the session alive
+	* the debug output in stdout: set the level in `loglevel`: 4- Debug, 3-Info, 2-Warning, 1-Error only; defaults to Warning=2
 
 * configure your webserver to proxy the following paths:
    * /rest/cv/read --> localhost:32150/read
