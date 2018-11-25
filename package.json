@@ -3,14 +3,27 @@
   "version": "0.1.0",
   "description": "Backend for the CometVisu to connect to KNX with SSE efficiently.",
   "main": "knxcometbackend.js",
-  "author": {
-    "name": "snowdd1"
-  },
+  "author": "snowdd1",
   "dependencies": {
     "eibd": "0.4.2",
     "minimist": "1.2.0"
   },
-  "repository": "git+https://github.com/snowdd1/comet-knx-backend",
-  "license": "GPL3"
-
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snowdd1/comet-knx-backend.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/snowdd1/comet-knx-backend/issues"
+  },
+  "homepage": "https://github.com/snowdd1/comet-knx-backend#readme",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "knxd",
+    "cometvisu",
+    "nodejs"
+  ]
 }
