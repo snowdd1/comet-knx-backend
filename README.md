@@ -2,6 +2,9 @@
 
 Beta of an interface between [knxd](https://github.com/knxd/knxd) (the knx daemon) and [CometVisu](https://github.com/CometVisu/CometVisu)
 
+# Requires
+ES6 e.g. node 10 LTS [nodejs.org](https://nodejs.org)
+
 ## Install
 * clone the repository
 

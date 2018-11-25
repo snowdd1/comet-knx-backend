@@ -12,9 +12,10 @@
  * (done) provide a read hook (http/https) using SSE (simple sample https://www.w3schools.com/html/html5_serversentevents.asp )
  * (done) provide a write hook (dito) - 
  * (done) provide a login hook (dito) https://github.com/CometVisu/CometVisu/wiki/Protokoll#login resp https://knx-user-forum.de/forum/supportforen/cometvisu/1288069-noch-eine-knxd-auf-zweitem-server?p=1288496#post1288496
+ * (done) issue read requests for values not in the cache (might be dangerous?)
  * Pending:
- * - find out why the node-eibd requires to close theh connection after each telegram for reliable sending of telegrams.
- * - issue read requests for values not in the cache (might be dangerous?)
+ * - find out why the node-eibd requires to close the connection after each telegram for reliable sending of telegrams.
+ * - 
  *
  */
 
@@ -243,7 +244,8 @@ class SSEStream {
         this.response = response;
         this.request = request;
         this.boundCloseSSE = this.closeSSE.bind(this)
-        this.request.on('close', this.boundCloseSSE );
+        this.request.on('close', this.boundCloseSSE); // clean up if the request line is closed
+        this.response.on('close', this.boundCloseSSE); // clean up if the response line is closed
         response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'connection': 'keep-alive' });
         //get all the cached data and send it
         let answer = "";
