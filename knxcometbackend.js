@@ -27,7 +27,8 @@ let config = {
         port: 6720
     },
     http: {
-        cacheport: 32150
+        port: 32150,
+        keepaliveSecs:60
     }
 }
 
@@ -69,44 +70,15 @@ class MiniLog {
 const minilog = new MiniLog(loglevels.Debug);
 
 
-
-
-
-/*
- * Required configuration for bus access
- */
-
-
-
 const knxd = require('eibd');
 //const Readable = require('stream').Readable;
 const http = require('http');
 const EventEmitter = require('events');
 
 
-
-// ***************************** debugging fcts only, can be removed before shipping ***************************
-function hex2bin(hex) {
-    return ("00000000" + (parseInt(hex, 16)).toString(2)).substr(-8);
-}
-function byte2bin(byte) {
-    return ("00000000" + (byte).toString(2)).substr(-8);
-}
-function buffer2bin(buf) {
-    let a = ''
-    minilog.debug('buffer2bin length: ' + buf.length)
-    for (let i = 0; i < buf.length; i++) {
-        //minilog.debug(buf.readUInt8(i));
-        a = a + (' 000' + i.toString(10)).substring(-4) + ':' + byte2bin(buf.readUInt8(i))
-    }
-    return a;
-}
-// ********************* END *****************
-
-
 /**
  * @classdesc A BusListener object is connected to a GropupSocketListener object and reacts on telegrams that are passed. It builds a local cache with the latest telegrams
- * @emits 'telegram' - on data
+ * @emits 'busevent' - on data
  * */
 class BusListener extends EventEmitter {
     /**
@@ -130,6 +102,10 @@ class BusListener extends EventEmitter {
         }
 
     }
+    /**
+     * If the connection is severed, the listeners have to be updated to the new connection
+     * @param {any} groupSocketListener
+     */
     _onConnectionReconnect(groupSocketListener) {
         minilog.debug('BusListener._onConnectionReconnect()');
         this.listener = groupSocketListener;
@@ -137,7 +113,7 @@ class BusListener extends EventEmitter {
     }
 
     /**
-     * 
+     * Whenever a telegram is arriving on the bus, this event handler will cache the value (if it's a write or response telegram, that is) and pass the value as hex string to listeners of 'busevent' emits
      * @param {string} event - Either 'read', 'write', 'response', 'memory write' - telegram type
      * @param {string} src - Source Address (physical)
      * @param {String} destGA - Desination Address (Group)
@@ -288,21 +264,40 @@ class SSEStream {
         } else {
             this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
         }
+        this.updateKeepalive();
         // try to read the addresses that were not in the cache
         for (let i = 0; i < addressesToRead.length; i++) {
             groupSocketWriter.readAddress(addressesToRead[i]);
         }
     }
     /**
-     * 
+     * Updates the EventStream through writing to the response object
      * @param {string} ga - Group Address
      * @param {string} value - hex encoded value
      */
     update(ga, value) {
         this.index += 1;
         minilog.debug('SSEStream.update(' + ga + ',' + value + ')');
-        this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index +'\n\n'); // try message as event type, and preceed data object with data:
+        this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
+        this.updateKeepalive();
     }
+    updateKeepalive() {
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        this.timer = setTimeout(this.keepalive.bind(this), config.http.keepaliveSecs * 1000);
+    }
+    /**
+     * sends an empty data package to keep proxies alive (happened with mod_proxy of apache)
+     * */
+    keepalive() {
+        this.index += 1;
+        minilog.debug('SSEStream.keepalive()');
+        this.response.write('event: message\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
+    }
+    /**
+     * Close the response object, detaches all listeners
+     * */
     closeSSE() {
         // close the stream!
         this.response.end();
@@ -341,8 +336,8 @@ class GroupSocketWriter {
     }
     /**
     * Writes a data package to the bus if a connection is established
-    * @param {string} groupAddress - KNX group address in 3 tier notation "1/2/3"
-    * @param {string} rawValueHexString - value in a buffer
+    * @param {string} groupAddress KNX group address in 3 tier notation "1/2/3"
+    * @param {string} rawValueHexString value in a string, encoded as hexadecimals
     */
     writeData(groupAddress, rawValueHexString) {
         var dest = knxd.str2addr(groupAddress);
@@ -357,7 +352,7 @@ class GroupSocketWriter {
 
                     } else {
                         minilog.debug("DEBUG opened TGroup ");
-                        var msg = this._hexValStringToBuffer(rawValueHexString); //knxd.createMessage('write', dpt, parseFloat(value));
+                        var msg = this._hexValStringToArray(rawValueHexString); 
                         //minilog.debug(rawValueHexString);
                         //minilog.debug(msg);
                         this.knxdconnection.sendAPDU(msg, function (err) {
@@ -378,7 +373,7 @@ class GroupSocketWriter {
     }
     /**
      * Issues read request on the bus
-     * @param {string} groupAddress
+     * @param {string} groupAddress three tier format like 1/2/3
      */
     readAddress(groupAddress) {
         var dest = knxd.str2addr(groupAddress);
@@ -427,19 +422,13 @@ class GroupSocketWriter {
     /**
      * Convert a valueHexString from CometVisu into an ADPU Buffer
      * @param {string} valueHexString
-     * @returns {Buffer}
+     * @returns {Array<Integer>}
      * */
-    _hexValStringToBuffer(valueHexString) {
+    _hexValStringToArray(valueHexString) {
         let buf = Buffer.from(valueHexString, 'hex');
         // make sure first bit is set (for writing command)
         buf.writeUInt8((buf[0] | 128) & 191, 0); // first bit set, second empty
         let ret = Buffer.concat([Buffer.alloc(1), buf]);
-        //check
-        //console.log(ret);
-        //console.log(knxd.createMessage('write', 'DPT1', parseFloat(1)))
-        //throw (new Error('STOP HERE'));
-
-        //return Buffer.concat([Buffer.alloc(1), buf]); // first byte MUST BE 00
         return Array.prototype.slice.call(Buffer.concat([Buffer.alloc(1), buf]), 0);
     }
 }
@@ -585,12 +574,12 @@ const groupSocketWriter = new GroupSocketWriter(config.knxd);
 
 
 // start webserver and attach it to the port given in config
-if (!config.http.cacheport || config.http.cacheport <= 1024 || config.http.cacheport >= 65000) {
-    minilog.debug('[OK] Webserver not started, no config.http.cacheport configured or cacheport<=1024 or cacheport>=65000');
+if (!config.http.port || config.http.port <= 1024 || config.http.port >= 65000) {
+    minilog.debug('[OK] Webserver not started, no config.http.port configured or port<=1024 or port>=65000');
 } else {
     // start the webserver
     const webserver = createRequestServer(busListener, groupSocketWriter);
-    webserver.listen(config.http.cacheport);
+    webserver.listen(config.http.port);
 }
 
 

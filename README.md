@@ -6,15 +6,16 @@ Beta of an interface between [knxd](https://github.com/knxd/knxd) (the knx daemo
 * clone the repository
 
 ## Configuration
-* the default port is 32150, you might (still) change that in the code: See `config` object, locate `cacheport:32150`
+* the *IP address or name* of the knxd server needs (still) to be put in knxcometbackend.js: See `config`object, locate `knxd` `host: 'knxd2-raspberry.zu.hause'` change to your setup
+* the default port is 32150, you might (still) change that in the code ofd knxcometbackend.js: See `config` object, locate `cacheport:32150`
+* if required asjust the `keepaliveSecs` setting - if there was no telegram to be sent upstream to the CV this triggers an empty message to force the reverse proxy to keep the session alive
 * configure your webserver to proxy the following paths:
    * /rest/cv/read --> localhost:32150/read
    * /rest/cv/write --> localhost:32150/write
    * /rest/cv/login --> localhost:32150/login  
+* configure your webserver to point `/rest/cv/login` in the apache settings.
+See the sample in [010-apache2sample.conf](https://github.com/snowdd1/comet-knx-backend/blob/master/010-apache2sample.conf)
 
-See the sample in 010-apache2sample.conf
-
-* configure your webserver to point `/rest/cv/login` in the apache settings, see [*German* KNX Forum post](https://knx-user-forum.de/forum/supportforen/cometvisu/1288069-noch-eine-knxd-auf-zweitem-server?p=1288496#post1288496)
 
 
 ## Run
@@ -24,3 +25,4 @@ Of course this is not a permanent solution, you will need to create a service fi
 
 # not supported yet:
 * rrdfetch
+
