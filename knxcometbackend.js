@@ -332,13 +332,17 @@ class SSEStream {
      * */
     closeSSE() {
         // close the stream!
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
         this.response.end();
-        minilog.info(this.ID + ' SSEStrem.closeSSE(): got request.close event');
+        minilog.info(this.ID.toISOString() + ' SSEStrem.closeSSE(): got request.close event');
         this.groupReader.removeListener('newData', this.boundUpdate);
         this.groupReader.closeGR();
         this.groupReader = undefined;
         this.request.removeListener('close', this.boundCloseSSE);
         this.response.removeListener('close', this.boundCloseSSE);
+
     }
 }
 /**
