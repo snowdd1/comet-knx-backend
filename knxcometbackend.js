@@ -308,7 +308,7 @@ class SSEStream {
      */
     update(ga, value) {
         this.index += 1;
-        minilog.info(this.ID.toISOString + ' SSEStream.update(' + ga + ',' + value + ')');
+        minilog.info(this.ID.toISOString() + ' SSEStream.update(' + ga + ',' + value + ')');
         this.response.write('event: message\ndata:{"d":{"' + ga + '":"' + value + '"}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
         this.updateKeepalive();
     }
@@ -323,7 +323,7 @@ class SSEStream {
      * */
     keepalive() {
         this.index += 1;
-        minilog.info(this.ID.toISOString + ' SSEStream.keepalive()');
+        minilog.info(this.ID.toISOString() + ' SSEStream.keepalive()');
         this.response.write('event: keepalive\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
         this.updateKeepalive();
     }
@@ -608,11 +608,12 @@ const groupSocketWriter = new GroupSocketWriter(config.knxd);
 
 // start webserver and attach it to the port given in config
 if (!config.http.port || config.http.port <= 1024 || config.http.port >= 65000) {
-    minilog.debug('[OK] Webserver not started, no config.http.port configured or port<=1024 or port>=65000');
+    minilog.error('[OK] Webserver not started, no config.http.port configured or port<=1024 or port>=65000');
 } else {
     // start the webserver
     const webserver = createRequestServer(busListener, groupSocketWriter);
     webserver.listen(config.http.port);
+    minilog.info('Server started, listening on port ' + config.http.port);
 }
 
 
