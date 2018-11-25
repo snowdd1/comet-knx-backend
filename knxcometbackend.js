@@ -293,7 +293,7 @@ class SSEStream {
     keepalive() {
         this.index += 1;
         minilog.debug('SSEStream.keepalive()');
-        this.response.write('event: message\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
+        this.response.write('event: keepalive\ndata:{"d":{}, "i":' + this.index + '}\nid:' + this.index + '\n\n'); //  message as event type, and preceed data object with data:
     }
     /**
      * Close the response object, detaches all listeners
