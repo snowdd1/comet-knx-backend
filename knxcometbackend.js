@@ -22,16 +22,6 @@
 /**
  * Configuration Object
  * */
-let config = {
-    knxd: {
-        host: "knxd2-raspberry.zu.hause",
-        port: 6720
-    },
-    http: {
-        port: 32150,
-        keepaliveSecs:60
-    }
-}
 
 var indGroupReader = 0;
 
@@ -76,6 +66,36 @@ const knxd = require('eibd');
 const http = require('http');
 const EventEmitter = require('events');
 
+// load the configuration
+var argv = require('minimist')(process.argv.slice(2));
+let filePath = "";
+var fs = require('fs'),
+    path = require('path'),
+    filePath = path.join(__dirname, 'config.json');
+if (argv['config']) {
+    // custom parameter
+    if (path.isAbsolute(argv['config'])) {
+        filePath = argv['config'];
+    } else {
+        filePath = path.join(__dirname, argv['config']);
+    }
+}
+const fs = require(fs);
+var file;
+try {
+    file = fs.readFileSync(filePath, { encoding: 'utf-8' });
+} catch (e) {
+    console.error('Could not read configuration file at ' + filePath);
+    throw e;
+}
+try {
+    const config = JSON.parse(file);
+} catch (e) {
+    console.log("There was a problem reading your " + filePath + " file.");
+    console.log("Please try pasting your file here to validate it: http://jsonlint.com");
+    console.log("");
+    throw e;
+}
 
 /**
  * @classdesc A BusListener object is connected to a GropupSocketListener object and reacts on telegrams that are passed. It builds a local cache with the latest telegrams
@@ -123,7 +143,7 @@ class BusListener extends EventEmitter {
     _onTelegram(event, src, destGA, valbuffer) {
         //minilog.debug('[ok] event ' + event + '; from: ' + src + '; Dest: ' + destGA + ' Value: ' + valbuffer.toString('hex'));
         //call all the users 
-        if (['write', 'response'].indexOf(event)>=0) {
+        if (['write', 'response'].indexOf(event) >= 0) {
             this._valueCache[destGA] = { timestamp: Math.floor(new Date() / 1000), value: valbuffer.toString('hex') };
             //minilog.debug('busevent fires for ' + destGA);
             this.emit('busevent', destGA, valbuffer.toString('hex'))
@@ -207,7 +227,7 @@ class GroupReader extends EventEmitter {
      * @param {string} value - hex-encoded value
      */
     newEvent(ga, value) {
-        minilog.debug(this.indexOfReader + ': GroupReader.newEvent(): ' + ga + ' listening for ' + this.addresses + ' (count: ' + this.addresses.length +')');
+        minilog.debug(this.indexOfReader + ': GroupReader.newEvent(): ' + ga + ' listening for ' + this.addresses + ' (count: ' + this.addresses.length + ')');
         if (this.addresses.includes(ga)) {
             minilog.debug('GroupReader.newEvent() "if" hit');
             this.emit('newData', ga, value);
@@ -234,7 +254,7 @@ class SSEStream {
      * @param {GroupSocketWriter} groupSocketWriter
      */
     constructor(buslistener, response, request, gaArray, groupSocketWriter) {
-        minilog.debug('SSEStrem constructor for '+gaArray);
+        minilog.debug('SSEStrem constructor for ' + gaArray);
         //console.dir(gaArray);
         // create a new listner to the events
         this.groupReader = new GroupReader(buslistener, gaArray);
@@ -262,9 +282,9 @@ class SSEStream {
             }
         }
         if (answer) {
-            this.response.write('event: message\ndata:{"d":{' + answer + '}, "i":0}\nid:' + this.index +'\n\n');
+            this.response.write('event: message\ndata:{"d":{' + answer + '}, "i":0}\nid:' + this.index + '\n\n');
         } else {
-            this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index +'\n\n');
+            this.response.write('event: message\ndata:{"d":{ }, "i":0}\nid:' + this.index + '\n\n');
         }
         this.updateKeepalive();
         // try to read the addresses that were not in the cache
@@ -355,7 +375,7 @@ class GroupSocketWriter {
 
                     } else {
                         minilog.debug("DEBUG opened TGroup ");
-                        var msg = this._hexValStringToArray(rawValueHexString); 
+                        var msg = this._hexValStringToArray(rawValueHexString);
                         //minilog.debug(rawValueHexString);
                         //minilog.debug(msg);
                         this.knxdconnection.sendAPDU(msg, function (err) {
@@ -409,7 +429,7 @@ class GroupSocketWriter {
         }
     }
 
-    
+
     /**
      * tries to reopen the connection of the connection breaks
      * */
@@ -455,7 +475,7 @@ function createRequestServer(busListener, groupSocketWriter) {
                 let key = decodeURIComponent(b[0]);
                 minilog.debug(key);
                 minilog.debug(params[key]);
-                let value = decodeURIComponent(b[1] || '') ;
+                let value = decodeURIComponent(b[1] || '');
                 minilog.debug(value);
                 if (params[key]) {
                     // key already exists

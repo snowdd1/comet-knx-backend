@@ -7,7 +7,8 @@
     "name": "snowdd1"
   },
   "dependencies": {
-    "eibd": "0.4.2"
+    "eibd": "0.4.2",
+    "minimist": "1.2.0"
   },
   "repository": "git+https://github.com/snowdd1/comet-knx-backend",
   "license": "GPL3"

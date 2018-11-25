@@ -1,0 +1,10 @@
+{
+  "knxd": {
+    "host": "knxd2-raspberry.zu.hause",
+    "port": 6720
+  },
+  "http": {
+    "port": 32150,
+    "keepaliveSecs": 60
+  }
+}

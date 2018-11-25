@@ -7,11 +7,14 @@ ES6 e.g. node 10 LTS [nodejs.org](https://nodejs.org)
 
 ## Install
 * clone the repository
+* rename file `config-sample.json` to `config.json`
 
 ## Configuration
-* the *IP address or name* of the knxd server needs (still) to be put in knxcometbackend.js: See `config`object, locate `knxd` `host: 'knxd2-raspberry.zu.hause'` change to your setup
-* the default port is 32150, you might (still) change that in the code ofd knxcometbackend.js: See `config` object, locate `cacheport:32150`
-* if required asjust the `keepaliveSecs` setting - if there was no telegram to be sent upstream to the CV this triggers an empty message to force the reverse proxy to keep the session alive
+* config.json
+    * the *IP address or name* of the knxd server: Locate `knxd` object, `host: 'knxd2-raspberry.zu.hause'` change to your setup
+    * the default port of 32150: See `http` object, locate `port:32150`
+    * if required adjust the `keepaliveSecs` setting - if there was no telegram to be sent upstream to the CV this triggers an empty message to force the reverse proxy to keep the session alive
+
 * configure your webserver to proxy the following paths:
    * /rest/cv/read --> localhost:32150/read
    * /rest/cv/write --> localhost:32150/write
@@ -23,8 +26,8 @@ See the sample in [010-apache2sample.conf](https://github.com/snowdd1/comet-knx-
 
 ## Run
 * start the server with `node knxcometbackend.js`
+* optional parameters: `-config <path>`: use other config-file than local config.json 
 
-Of course this is not a permanent solution, you will need to create a service file (if on systemd-based OS like Raspbian)
 
 # not supported yet:
 * rrdfetch
