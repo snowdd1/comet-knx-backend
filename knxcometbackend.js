@@ -73,6 +73,9 @@ const fs = require('fs'),
     path = require('path');
 
 var filePath = path.join(__dirname, 'config.json');
+
+console.dir(argv);
+
 if (argv['config']) {
     // custom parameter
     if (path.isAbsolute(argv['config'])) {
