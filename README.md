@@ -1,9 +1,9 @@
 ﻿# comet-knx-backend
 
-Beta of an interface between [knxd](https://github.com/knxd/knxd) (the knx daemon) and [CometVisu](https://github.com/CometVisu/CometVisu)
+Beta of an interface between [knxd](https://github.com/knxd/knxd) (the knx daemon) and [CometVisu](https://github.com/CometVisu/CometVisu) using Server Sent Events (SSE aka EventStream).
 
 # Requires
-ES6 e.g. node 10 LTS [nodejs.org](https://nodejs.org)
+ES6 e.g. NodeJS 10 LTS, get it here: [nodejs.org](https://nodejs.org)
 
 ## Install
 * clone the repository
