@@ -11,7 +11,7 @@ ES6 e.g. node 10 LTS [nodejs.org](https://nodejs.org)
 
 ## Configuration
 * config.json
-    * the *IP address or name* of the knxd server: Locate `knxd` object, `host: 'knxd2-raspberry.zu.hause'` change to your setup
+    * the *IP address or name* of the knxd server: Locate `knxd` object, `host: 'my-knxd-server.local'` change to your setup
     * the default port of 32150: See `http` object, locate `port:32150`
     * if required adjust the `keepaliveSecs` setting - if there was no telegram to be sent upstream to the CV this triggers an empty message to force the reverse proxy to keep the session alive
 

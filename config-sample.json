@@ -1,6 +1,6 @@
 {
   "knxd": {
-    "host": "knxd2-raspberry.zu.hause",
+    "host": "my-knxd-server.local",
     "port": 6720
   },
   "http": {
