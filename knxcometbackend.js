@@ -69,7 +69,7 @@ const EventEmitter = require('events');
 // load the configuration
 var argv = require('minimist')(process.argv.slice(2));
 
-var fs = require('fs'),
+const fs = require('fs'),
     path = require('path');
 
 var filePath = path.join(__dirname, 'config.json');
@@ -81,7 +81,7 @@ if (argv['config']) {
         filePath = path.join(__dirname, argv['config']);
     }
 }
-const fs = require(fs);
+
 var file;
 try {
     file = fs.readFileSync(filePath, { encoding: 'utf-8' });
