@@ -82,7 +82,7 @@ if (argv['config']) {
     }
 }
 
-var file;
+var file; config;
 try {
     file = fs.readFileSync(filePath, { encoding: 'utf-8' });
 } catch (e) {
@@ -90,7 +90,7 @@ try {
     throw e;
 }
 try {
-    const config = JSON.parse(file);
+    config = JSON.parse(file);
 } catch (e) {
     console.log("There was a problem reading your " + filePath + " file.");
     console.log("Please try pasting your file here to validate it: http://jsonlint.com");
