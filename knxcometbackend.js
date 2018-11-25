@@ -74,14 +74,16 @@ const fs = require('fs'),
 
 var filePath = path.join(__dirname, 'config.json');
 
-console.dir(argv);
+//console.dir(argv);
 
-if (argv['config']) {
+let custFile = argv['config'] || argv['c']
+
+if (custFile) {
     // custom parameter
-    if (path.isAbsolute(argv['config'])) {
-        filePath = argv['config'];
+    if (path.isAbsolute(custFile)) {
+        filePath = custFile;
     } else {
-        filePath = path.join(__dirname, argv['config']);
+        filePath = path.join(__dirname, custFile);
     }
 }
 

@@ -26,7 +26,7 @@ See the sample in [010-apache2sample.conf](https://github.com/snowdd1/comet-knx-
 
 ## Run
 * start the server with `node knxcometbackend.js`
-* optional parameters: `-config <path>`: use other config-file than local config.json 
+* optional parameters: `--config | -c <path>`: use other config-file than local config.json 
 
 
 # not supported yet:
