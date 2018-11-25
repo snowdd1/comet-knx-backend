@@ -82,7 +82,7 @@ if (argv['config']) {
     }
 }
 
-var file; config;
+var file, config;
 try {
     file = fs.readFileSync(filePath, { encoding: 'utf-8' });
 } catch (e) {
