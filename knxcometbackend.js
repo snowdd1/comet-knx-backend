@@ -68,10 +68,11 @@ const EventEmitter = require('events');
 
 // load the configuration
 var argv = require('minimist')(process.argv.slice(2));
-let filePath = "";
+
 var fs = require('fs'),
-    path = require('path'),
-    filePath = path.join(__dirname, 'config.json');
+    path = require('path');
+
+var filePath = path.join(__dirname, 'config.json');
 if (argv['config']) {
     // custom parameter
     if (path.isAbsolute(argv['config'])) {
